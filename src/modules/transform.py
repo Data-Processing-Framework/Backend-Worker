@@ -26,14 +26,10 @@ class transform:
         socket.send(b"READY")
 
         while True:
-            request = socket.recv_multipart()[0]
-            print(
-                "{}: {}".format(
-                    socket.identity.decode("ascii"), request.decode("ascii")
-                )
-            )
-            result = self.process_item(request.decode("ascii"))
-            publisher.send((self.name + ":" + result).encode("utf-8"))
+            request = socket.recv_string()
+            print("{}: {}".format(socket.identity.decode("ascii"), request))
+            result = self.process_item(request)
+            publisher.send_string(self.name + ":" + result)
             socket.send(b"OK")
 
     def run(self):
@@ -65,16 +61,16 @@ class transform:
             sockets = dict(poller.poll())
 
             if backend in sockets:
-                worker, empty, status = backend.recv_multipart()
+                worker = backend.recv_multipart()[0]
                 workers.append(worker)
                 if workers and not backend_ready:
                     poller.register(subscriber, zmq.POLLIN)
                     backend_ready = True
 
             if subscriber in sockets:
-                request = subscriber.recv_multipart()
+                request = subscriber.recv()
                 worker = workers.pop(0)
-                backend.send_multipart([worker, b"", request[0]])
+                backend.send_multipart([worker, b"", request])
                 if not workers:
                     poller.unregister(subscriber)
                     backend_ready = False

@@ -1,7 +1,12 @@
 import time
 from threading import Thread
-from transform import transform
 import zmq
+
+import sys
+from os import path
+
+sys.path.append(path.dirname(path.dirname(path.abspath(__file__))))
+from src.modules.transform import transform
 
 
 def process_item(message: str):
@@ -18,7 +23,7 @@ def publisher_thread():
     while True:
         string = "input:" + str("1")
         try:
-            publisher.send(string.encode("utf-8"))
+            publisher.send_string(string)
         except zmq.ZMQError as e:
             if e.errno == zmq.ETERM:
                 break  # Interrupted
