@@ -9,11 +9,17 @@ class transform:
         sub_topics: list,
         process_item: callable,
         n_workers: int,
+        description: str,
+        type_in: str,
+        type_out: str,
     ) -> None:
         self.name = name
         self.sub_topics = sub_topics
         self.process_item = process_item
         self.n_workers = n_workers
+        self.description = description
+        self.type_out = type_out
+        self.type_in = type_in
 
     def worker(self, id):
         ctx = zmq.Context.instance()

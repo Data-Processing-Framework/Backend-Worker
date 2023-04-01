@@ -1,0 +1,44 @@
+[
+	{
+		"name": "Input1",
+		"type": "Input",
+		"module": "TextInput",
+		"inputs": null
+	},
+	{
+		"name": "Input2",
+		"type": "Input",
+		"module": "MYSQLInput",
+		"inputs": null
+	},
+	{
+		"name": "Transform1",
+		"type": "Transform",
+		"module": "REGEX",
+		"inputs": ["Input1"]
+	},
+	{
+		"name": "Transform2",
+		"type": "Transform",
+		"module": "REGEX",
+		"inputs": ["Input1", "Input2"]
+	},
+	{
+		"name": "Transform3",
+		"type": "Transform",
+		"module": "JSON",
+		"inputs": ["Input1", "Transform2", "Transform1"]
+	},
+	{
+		"name": "Output1",
+		"type": "Output",
+		"module": "MYSQLOutput",
+		"inputs": ["Input1", "Transform2", "Transform3"]
+	},
+	{
+		"name": "Output2",
+		"type": "Output",
+		"module": "TextOutput",
+		"inputs": ["Transform1", "Transform2", "Input2"]
+	}
+]

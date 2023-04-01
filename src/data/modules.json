@@ -1,0 +1,9 @@
+[
+	{
+		"name": "MYSQLInput",
+		"type": "Input",
+		"description": "asdasdas",
+		"type_in": ["str", "JSON"],
+		"type_out": ["str"]
+	}
+]
