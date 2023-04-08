@@ -2,56 +2,114 @@ import zmq
 from dotenv import load_dotenv
 import os
 import json
+from importlib import import_module
+from modules.transform import transform
+from threading import Thread
+import time
+
+load_dotenv()
 
 
 class controller:
     def __init__(self) -> None:
-        ctx = zmq.Context.instance()
-
-        self.subscriber = ctx.socket(zmq.SUB)
+        context = zmq.Context()
+        self.subscriber = context.socket(zmq.SUB)
         self.subscriber.connect(os.getenv("controller_request_bus_address"))
         self.subscriber.subscribe("")
-        res = self.update_graph('{"hola":3}')
+        self.response = context.socket(zmq.PUB)
+        self.subscriber.connect(os.getenv("controller_response_bus_address"))
+
+        self.nodes = []
+        self.n_nodes = 0
+        res = self.update_graph()
         if res != "OK":
             raise Exception(res)
 
-    def update_graph(self, graph=None):
-        try:
-            graph_file = open("./src/data/graph.json", "w+")
-            if not graph:
-                self.graph = json.dump(graph_file)
-            else:
-                self.graph = json.loads(graph)
-                json.dump(graph, graph_file)
+    def create_node(self, node):
+        module_path = "./src/data/modules/{}.py".format(node["module"])
+        if not os.path.isfile(module_path):
+            raise Exception("Module {} not found".format(node["module"]))
+        module = import_module("data.modules." + node["module"])
+        match (node["type"]):
+            case "Input":
+                pass
+            case "Transform":
+                # TODO Decidir si volem que el client programi el process_item o tot el modul per tenir mes llibertat
+                return transform(node["name"], node["inputs"], module.process_item, 1)
+            case "Output":
+                pass
+            case _:
+                pass
+        return "OK"
 
-            for a in self.graph:
-                self.nodes = a
-        except Exception as e:
-            return str(e)
+    def update_graph(self):
+        graph_file = open("./src/data/graph.json", "r")
+        self.graph = json.load(graph_file)
 
-    def start(self):
-        self.update_graph()
+        for a in self.graph:
+            node = self.create_node(a)
+            self.nodes.append(node)
+            node.start()
+
+        return "OK"
 
     def stop(self):
-        for a in self.nodes:
-            pass
+        context = zmq.Context.instance()
+        context.term()
+        self.nodes = []
+        return "OK"
 
-    def create_module(self):
-        pass
+    def status(self):
+        errors = []
+        if len(self.graph != len(self.nodes)):
+            errors.append(
+                {
+                    "error": "Worker error",
+                    "message": "Graph with less nodes than expected",
+                    "detail": "Try restarting the system",
+                }
+            )
+        for node in self.nodes:
+            errors.append(node.status())
+        if errors != []:
+            return errors
+        else:
+            return "OK"
 
     def run(self):
         while True:
             # CREATE;MODULUE;{"name":"creator", code:"def..."}
             res = self.subscriber.recv_string().split(";", maxsplit=2)
-            match res[0]:
-                case "START":
-                    pass
-                case "CREATE":
-                    match res[1]:
-                        case "MODULE":
-                            self.create_module(res[2])
-                        case "GRAPH":
-                            self.update_graph(res[2])
+            try:
+                match res[0]:
+                    case "START":
+                        res = self.update_graph()
+                    case "STOP":
+                        res = self.stop()
+                    case "RESTART":
+                        self.stop()
+                        res = self.update_graph()
+                    case "STATUS":
+                        res = self.status()
+                    case _:
+                        pass
+                self.response.send_string(res)
+            except Exception as e:
+                self.response.send_string(
+                    json.dumps(
+                        [
+                            {
+                                "error": "Worker error",
+                                "message": str(e),
+                                "detail": "Try restarting the system",
+                            }
+                        ]
+                    )
+                )
+                continue
 
 
-controller()
+c = controller()
+time.sleep(3)
+c.stop()
+print("hola")
