@@ -8,6 +8,9 @@ from os import path
 sys.path.append(path.dirname(path.dirname(path.abspath(__file__))))
 from src.modules.transform import transform
 from src import broker
+from dotenv import load_dotenv
+
+load_dotenv()
 
 
 def process_item(message: str):

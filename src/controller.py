@@ -1,23 +1,18 @@
 import zmq
-from dotenv import load_dotenv
 import os
 import json
 from importlib import import_module
 from src.modules.transform import transform
-from threading import Thread
-import time
-
-load_dotenv()
 
 
 class controller:
     def __init__(self) -> None:
         context = zmq.Context()
         self.subscriber = context.socket(zmq.SUB)
-        self.subscriber.connect(os.getenv("controller_request_bus_address"))
+        self.subscriber.connect(os.getenv("CONTROLLER_REQUEST_ADDRESS"))
         self.subscriber.subscribe("")
         self.response = context.socket(zmq.PUB)
-        self.subscriber.connect(os.getenv("controller_response_bus_address"))
+        self.subscriber.connect(os.getenv("CONTROLLER_RESPONSE_ADDRESS"))
 
         self.nodes = []
         self.n_nodes = 0
