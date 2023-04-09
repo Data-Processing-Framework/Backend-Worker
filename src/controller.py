@@ -3,7 +3,7 @@ from dotenv import load_dotenv
 import os
 import json
 from importlib import import_module
-from modules.transform import transform
+from src.modules.transform import transform
 from threading import Thread
 import time
 
@@ -29,7 +29,7 @@ class controller:
         module_path = "./src/data/modules/{}.py".format(node["module"])
         if not os.path.isfile(module_path):
             raise Exception("Module {} not found".format(node["module"]))
-        module = import_module("data.modules." + node["module"])
+        module = import_module("src.data.modules." + node["module"])
         match (node["type"]):
             case "Input":
                 pass
@@ -104,10 +104,3 @@ class controller:
                     )
                 )
                 continue
-
-
-c = controller()
-time.sleep(3)
-print(c.status())
-# c.stop()
-print("hola")
