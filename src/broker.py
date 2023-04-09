@@ -3,7 +3,7 @@ import os
 
 
 def run():
-    ctx = zmq.Context.instance()
+    ctx = zmq.Context()
     publisher = ctx.socket(zmq.XPUB)
     publisher.bind("tcp://127.0.0.1:" + os.getenv("DATA_SUBSCRIBER_PORT"))
     subscriber = ctx.socket(zmq.XSUB)

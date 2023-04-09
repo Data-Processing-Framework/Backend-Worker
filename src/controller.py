@@ -12,7 +12,7 @@ class controller:
         self.subscriber.connect(os.getenv("CONTROLLER_REQUEST_ADDRESS"))
         self.subscriber.subscribe("")
         self.response = context.socket(zmq.PUB)
-        self.subscriber.connect(os.getenv("CONTROLLER_RESPONSE_ADDRESS"))
+        self.response.connect(os.getenv("CONTROLLER_RESPONSE_ADDRESS"))
 
         self.nodes = []
         self.n_nodes = 0
