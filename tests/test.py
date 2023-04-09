@@ -7,6 +7,7 @@ from os import path
 
 sys.path.append(path.dirname(path.dirname(path.abspath(__file__))))
 from src.modules.transform import transform
+from src import broker
 
 
 def process_item(message: str):
@@ -34,6 +35,7 @@ def publisher_thread():
 
 tr1 = transform("transform1", ["input"], process_item, 10)
 # tr1.run()
+Thread(target=broker.run).start()
 Thread(target=tr1.run).start()
 tr2 = transform("transform2", ["transform1"], process_item, 10)
 Thread(target=tr2.run).start()
