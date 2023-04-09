@@ -1,9 +1,9 @@
 import multiprocessing
-from multiprocessing.resource_sharer import stop
 import zmq
 import os
 import threading
 from ctypes import c_bool
+import queue
 
 
 class transform(threading.Thread):
@@ -16,6 +16,7 @@ class transform(threading.Thread):
         self.process_item = process_item
         self.n_workers = n_workers
         self.timeout = int(os.getenv("global_timeout"))
+        self.workers = queue.Queue()
 
     def worker(self, id, stopper):
         context = zmq.Context.instance()
@@ -42,20 +43,34 @@ class transform(threading.Thread):
         backend.close()
         context.term()
 
+    def status(self):
+        res = {"errors": []}
+        id = 0
+        workers = list(self.workers.queue)
+        for w in workers:
+            res["Worker-{}-{}".format(self.name, id)] = w.is_alive()
+            id += 1
+        if self.n_workers != len(self.workers.queue):
+            res["errors"].append(
+                "Expected {} workers but got {} workers".format(
+                    self.n_workers, len(self.workers.queue)
+                )
+            )
+        return res
+
     def run(self):
         context = zmq.Context.instance()
 
         subscriber = context.socket(zmq.SUB)
         subscriber.connect("tcp://127.0.0.1:5555")
 
-        processes = []
         stopper = multiprocessing.Value(c_bool, False)
 
         def start(task, *args):
             process = multiprocessing.Process(target=task, args=args)
             process.daemon = True
             process.start()
-            processes.append(process)
+            self.workers.put(process)
 
         for i in range(self.n_workers):
             start(self.worker, i, stopper)
@@ -92,7 +107,8 @@ class transform(threading.Thread):
             except zmq.ContextTerminated:
                 break
         stopper.value = True
-        for a in processes:
-            a.join()
+        while not self.workers.empty:
+            w = self.workers.get()
+            w.join()
         backend.close()
         subscriber.close()

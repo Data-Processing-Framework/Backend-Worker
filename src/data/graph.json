@@ -4,5 +4,17 @@
 		"type": "Transform",
 		"module": "SleepTransform",
 		"inputs": ["Input1"]
+	},
+	{
+		"name": "Transform2",
+		"type": "Transform",
+		"module": "SleepTransform",
+		"inputs": ["Input1", "Input2"]
+	},
+	{
+		"name": "Transform3",
+		"type": "Transform",
+		"module": "SleepTransform",
+		"inputs": ["Input1", "Transform2", "Transform1"]
 	}
 ]

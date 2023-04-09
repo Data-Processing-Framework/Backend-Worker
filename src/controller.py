@@ -35,7 +35,7 @@ class controller:
                 pass
             case "Transform":
                 # TODO Decidir si volem que el client programi el process_item o tot el modul per tenir mes llibertat
-                return transform(node["name"], node["inputs"], module.process_item, 1)
+                return transform(node["name"], node["inputs"], module.process_item, 10)
             case "Output":
                 pass
             case _:
@@ -60,9 +60,9 @@ class controller:
         return "OK"
 
     def status(self):
-        errors = []
-        if len(self.graph != len(self.nodes)):
-            errors.append(
+        res = {"errors": []}
+        if len(self.graph) != len(self.nodes):
+            res["errors"].append(
                 {
                     "error": "Worker error",
                     "message": "Graph with less nodes than expected",
@@ -70,15 +70,12 @@ class controller:
                 }
             )
         for node in self.nodes:
-            errors.append(node.status())
-        if errors != []:
-            return errors
-        else:
-            return "OK"
+            res[node.name] = node.status()
+
+        return json.dumps(res)
 
     def run(self):
         while True:
-            # CREATE;MODULUE;{"name":"creator", code:"def..."}
             res = self.subscriber.recv_string().split(";", maxsplit=2)
             try:
                 match res[0]:
@@ -92,7 +89,7 @@ class controller:
                     case "STATUS":
                         res = self.status()
                     case _:
-                        pass
+                        raise Exception("Command {} not supported".format(res[0]))
                 self.response.send_string(res)
             except Exception as e:
                 self.response.send_string(
@@ -111,5 +108,6 @@ class controller:
 
 c = controller()
 time.sleep(3)
-c.stop()
+print(c.status())
+# c.stop()
 print("hola")
