@@ -1,42 +1,62 @@
 import multiprocessing
 import zmq
+import os
+import threading
+from ctypes import c_bool
+import queue
 
 
-class transform:
+class transform(threading.Thread):
     def __init__(
-        self,
-        name: str,
-        sub_topics: list,
-        process_item: callable,
-        n_workers: int,
-        description: str,
-        type_in: str,
-        type_out: str,
+        self, name: str, sub_topics: list, process_item: callable, n_workers: int
     ) -> None:
+        threading.Thread.__init__(self)
         self.name = name
         self.sub_topics = sub_topics
         self.process_item = process_item
         self.n_workers = n_workers
-        self.description = description
-        self.type_out = type_out
-        self.type_in = type_in
+        self.timeout = int(os.getenv("global_timeout"))
+        self.workers = queue.Queue()
 
-    def worker(self, id):
-        ctx = zmq.Context.instance()
-        publisher = ctx.socket(zmq.PUB)
+    def worker(self, id, stopper):
+        context = zmq.Context.instance()
+        publisher = context.socket(zmq.PUB)
         publisher.connect("tcp://127.0.0.1:5556".format(self.name))
 
-        socket = zmq.Context().socket(zmq.REQ)
-        socket.identity = "Worker-{}-{}".format(self.name, id).encode("ascii")
-        socket.connect("ipc://{}-backend.ipc".format(self.name))
-        socket.send(b"READY")
+        backend = context.socket(zmq.REQ)
+        backend.identity = "Worker-{}-{}".format(self.name, id).encode("ascii")
+        backend.connect("ipc://{}-backend.ipc".format(self.name))
+        backend.send(b"READY")
 
-        while True:
-            request = socket.recv_string()
-            print("{}: {}".format(socket.identity.decode("ascii"), request))
-            result = self.process_item(request)
-            publisher.send_string(self.name + ":" + result)
-            socket.send(b"OK")
+        poller = zmq.Poller()
+        poller.register(backend, zmq.POLLIN)
+
+        while not stopper.value:
+            sockets = dict(poller.poll(timeout=self.timeout))
+            if backend in sockets:
+                request = backend.recv_string()
+                print("{}: {}".format(backend.identity.decode("ascii"), request))
+                result = self.process_item(request)
+                publisher.send_string(self.name + ":" + result)
+                backend.send(b"OK")
+        publisher.close()
+        backend.close()
+        context.term()
+
+    def status(self):
+        res = {"errors": []}
+        id = 0
+        workers = list(self.workers.queue)
+        for w in workers:
+            res["Worker-{}-{}".format(self.name, id)] = w.is_alive()
+            id += 1
+        if self.n_workers != len(self.workers.queue):
+            res["errors"].append(
+                "Expected {} workers but got {} workers".format(
+                    self.n_workers, len(self.workers.queue)
+                )
+            )
+        return res
 
     def run(self):
         context = zmq.Context.instance()
@@ -44,13 +64,16 @@ class transform:
         subscriber = context.socket(zmq.SUB)
         subscriber.connect("tcp://127.0.0.1:5555")
 
+        stopper = multiprocessing.Value(c_bool, False)
+
         def start(task, *args):
             process = multiprocessing.Process(target=task, args=args)
             process.daemon = True
             process.start()
+            self.workers.put(process)
 
         for i in range(self.n_workers):
-            start(self.worker, i)
+            start(self.worker, i, stopper)
 
         for topic in self.sub_topics:
             subscriber.setsockopt_string(zmq.SUBSCRIBE, topic)
@@ -64,19 +87,28 @@ class transform:
         poller.register(backend, zmq.POLLIN)
 
         while True:
-            sockets = dict(poller.poll())
+            try:
+                sockets = dict(poller.poll(timeout=self.timeout))
 
-            if backend in sockets:
-                worker = backend.recv_multipart()[0]
-                workers.append(worker)
-                if workers and not backend_ready:
-                    poller.register(subscriber, zmq.POLLIN)
-                    backend_ready = True
+                if backend in sockets:
+                    worker = backend.recv_multipart()[0]
+                    workers.append(worker)
+                    if workers and not backend_ready:
+                        poller.register(subscriber, zmq.POLLIN)
+                        backend_ready = True
 
-            if subscriber in sockets:
-                request = subscriber.recv()
-                worker = workers.pop(0)
-                backend.send_multipart([worker, b"", request])
-                if not workers:
-                    poller.unregister(subscriber)
-                    backend_ready = False
+                if subscriber in sockets:
+                    request = subscriber.recv()
+                    worker = workers.pop(0)
+                    backend.send_multipart([worker, b"", request])
+                    if not workers:
+                        poller.unregister(subscriber)
+                        backend_ready = False
+            except zmq.ContextTerminated:
+                break
+        stopper.value = True
+        while not self.workers.empty:
+            w = self.workers.get()
+            w.join()
+        backend.close()
+        subscriber.close()
