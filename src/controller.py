@@ -3,6 +3,7 @@ import os
 import json
 from importlib import import_module
 from src.modules.transform import transform
+from src.modules.output import output
 
 
 class controller:
@@ -32,7 +33,7 @@ class controller:
                 # TODO Decidir si volem que el client programi el process_item o tot el modul per tenir mes llibertat
                 return transform(node["name"], node["inputs"], module.process_item, 10)
             case "Output":
-                pass
+                return output(node["name"], node["inputs"], module.process_item, 10)
             case _:
                 pass
         return "OK"
