@@ -37,7 +37,8 @@ class output(threading.Thread):
                 request = backend.recv_string()
                 print("{}: {}".format(backend.identity.decode("ascii"), request))
                 result = self.process_item(request)
-                logging.debug(result)
+                if result is not None and type(result) == str:
+                    logging.debug(result)
                 backend.send(b"OK")
         backend.close()
         context.term()
