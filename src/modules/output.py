@@ -4,6 +4,7 @@ import os
 import threading
 from ctypes import c_bool
 import queue
+import logging
 
 class output(threading.Thread):
     def __init__(
@@ -17,6 +18,7 @@ class output(threading.Thread):
         self.timeout = int(os.getenv("WORKER_TIMEOUT"))
         self.subscriber_port = os.getenv("DATA_SUBSCRIBER_PORT")
         self.workers = queue.Queue()
+        logging.basicConfig(filename=self.name + ".log", level=logging.DEBUG)
 
     def worker(self, id, stopper):
         context = zmq.Context.instance()
@@ -35,6 +37,7 @@ class output(threading.Thread):
                 request = backend.recv_string()
                 print("{}: {}".format(backend.identity.decode("ascii"), request))
                 result = self.process_item(request)
+                logging.debug(result)
                 backend.send(b"OK")
         backend.close()
         context.term()
