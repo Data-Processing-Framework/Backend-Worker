@@ -7,6 +7,8 @@ from os import path
 
 sys.path.append(path.dirname(path.dirname(path.abspath(__file__))))
 from src.modules.transform import transform
+from src.modules.output import output
+from src.data.modules import insertDB
 from src import broker
 from dotenv import load_dotenv
 
@@ -37,11 +39,16 @@ def publisher_thread():
 
 
 tr1 = transform("transform1", ["input"], process_item, 10)
-# tr1.run()
-Thread(target=broker.run).start()
-Thread(target=tr1.run).start()
+tr1.start()
 tr2 = transform("transform2", ["transform1"], process_item, 10)
-Thread(target=tr2.run).start()
+tr2.start()
+# Thread(target=broker.run).start()
+
+tr3 = output("outpu1", ["transform1"], insertDB.process_item, 10)
+tr3.start()
+tr4 = output("outpu2", ["transform2"], process_item, 10)
+tr4.start()
+Thread(target=broker.run).start()
 
 
 publisher_thread()
