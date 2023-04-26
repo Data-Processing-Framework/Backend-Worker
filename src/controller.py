@@ -32,14 +32,14 @@ class controller:
         if self.isInput:
             match (node["type"]):
                 case "Input":
-                    return input(node["name"], module.process_item, 1000)
+                    return input(node["name"], module.process_item, 1)
                 case _:
                     pass
         else:
             match (node["type"]):
                 case "Transform":
                     # TODO Decidir si volem que el client programi el process_item o tot el modul per tenir mes llibertat
-                    return transform(node["name"], node["inputs"], module.process_item, 10)
+                    return transform(node["name"], node["inputs"], module.process_item, 1)
                 case "Output":
                     pass
                 case _:

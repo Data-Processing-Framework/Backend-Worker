@@ -11,7 +11,7 @@ class input(threading.Thread):
         threading.Thread.__init__(self)
         self.name = name
         self.process_item = process_item
-        self.publisher_port = os.getenv("DATA_PUBLISHER_PORT")
+        self.publisher_addr = os.getenv("DATA_PUBLISHER_ADDRESS")
         self.stopper = False
         self.polling_time = polling_time
 
@@ -33,7 +33,7 @@ class input(threading.Thread):
     def run(self):
         context = zmq.Context.instance()
         publisher = context.socket(zmq.PUB)
-        publisher.connect("tcp://127.0.0.1:" + self.publisher_port)
+        publisher.connect(self.publisher_addr)
 
         while not self.stopper:
             try:

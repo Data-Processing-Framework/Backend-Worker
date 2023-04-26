@@ -1,14 +1,14 @@
-import time
-from threading import Thread
-import zmq
-
+from dotenv import load_dotenv
 import sys
 from os import path
-
 sys.path.append(path.dirname(path.dirname(path.abspath(__file__))))
+from src.broker import broker
+from src.modules.input import input
 from src.modules.transform import transform
-from src import broker
-from dotenv import load_dotenv
+import zmq
+from threading import Thread
+import time
+
 
 load_dotenv()
 
@@ -16,6 +16,10 @@ load_dotenv()
 def process_item(message: str):
     time.sleep(1)
     return message
+
+
+def dummy_input():
+    return "dummy"
 
 
 def publisher_thread():
@@ -36,12 +40,14 @@ def publisher_thread():
         time.sleep(0.1)  # Wait for 1/10th second
 
 
-tr1 = transform("transform1", ["input"], process_item, 10)
-# tr1.run()
-Thread(target=broker.run).start()
-Thread(target=tr1.run).start()
+in1 = input("input1", dummy_input, 0.1)
+tr1 = transform("transform1", ["input1"], process_item, 10)
+br=broker()
 tr2 = transform("transform2", ["transform1"], process_item, 10)
-Thread(target=tr2.run).start()
+br.start()
+in1.start()
+tr1.start()
+tr2.start()
 
 
 publisher_thread()

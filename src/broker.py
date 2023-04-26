@@ -7,8 +7,8 @@ class broker(threading.Thread):
     def run(self):
         ctx = zmq.Context()
         publisher = ctx.socket(zmq.XPUB)
-        publisher.bind("tcp://127.0.0.1:" + os.getenv("DATA_SUBSCRIBER_PORT"))
+        publisher.bind(os.getenv("DATA_SUBSCRIBER_ADDRESS"))
         subscriber = ctx.socket(zmq.XSUB)
-        subscriber.bind("tcp://127.0.0.1:" + os.getenv("DATA_PUBLISHER_PORT"))
+        subscriber.bind(os.getenv("DATA_PUBLISHER_ADDRESS"))
 
         zmq.proxy(subscriber, publisher)
