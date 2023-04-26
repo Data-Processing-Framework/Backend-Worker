@@ -1,20 +1,35 @@
 [
 	{
+		"name": "Input1",
+		"type": "Input",
+		"module": "dummyInput",
+		"inputs": []
+	},
+	{
 		"name": "Transform1",
 		"type": "Transform",
 		"module": "SleepTransform",
-		"inputs": ["Input1"]
+		"inputs": [
+			"Input1"
+		]
 	},
 	{
 		"name": "Transform2",
 		"type": "Transform",
 		"module": "SleepTransform",
-		"inputs": ["Input1", "Input2"]
+		"inputs": [
+			"Input1",
+			"Input2"
+		]
 	},
 	{
 		"name": "Transform3",
 		"type": "Transform",
 		"module": "SleepTransform",
-		"inputs": ["Input1", "Transform2", "Transform1"]
+		"inputs": [
+			"Input1",
+			"Transform2",
+			"Transform1"
+		]
 	}
 ]
