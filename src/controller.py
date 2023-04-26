@@ -3,6 +3,8 @@ import os
 import json
 from importlib import import_module
 from src.modules.transform import transform
+from src.modules.input import input
+from src.broker import broker
 
 
 class controller:
@@ -13,6 +15,7 @@ class controller:
         self.subscriber.subscribe("")
         self.response = context.socket(zmq.PUB)
         self.response.connect(os.getenv("CONTROLLER_RESPONSE_ADDRESS"))
+        self.isInput = int(os.getenv("IS_INPUT"))
 
         self.nodes = []
         self.n_nodes = 0
@@ -25,26 +28,38 @@ class controller:
         if not os.path.isfile(module_path):
             raise Exception("Module {} not found".format(node["module"]))
         module = import_module("src.data.modules." + node["module"])
-        match (node["type"]):
-            case "Input":
-                pass
-            case "Transform":
-                # TODO Decidir si volem que el client programi el process_item o tot el modul per tenir mes llibertat
-                return transform(node["name"], node["inputs"], module.process_item, 10)
-            case "Output":
-                pass
-            case _:
-                pass
+
+        if self.isInput:
+            match (node["type"]):
+                case "Input":
+                    return input(node["name"], module.process_item, 1)
+                case _:
+                    pass
+        else:
+            match (node["type"]):
+                case "Transform":
+                    # TODO Decidir si volem que el client programi el process_item o tot el modul per tenir mes llibertat
+                    return transform(node["name"], node["inputs"], module.process_item, 1)
+                case "Output":
+                    pass
+                case _:
+                    pass
         return "OK"
 
     def update_graph(self):
+        if self.isInput:
+            b = broker()
+            self.nodes.append(b)
+            b.start()
+
         graph_file = open("./src/data/graph.json", "r")
         self.graph = json.load(graph_file)
 
         for a in self.graph:
             node = self.create_node(a)
-            self.nodes.append(node)
-            node.start()
+            if node != "OK":
+                self.nodes.append(node)
+                node.start()
 
         return "OK"
 
@@ -84,7 +99,8 @@ class controller:
                     case "STATUS":
                         res = self.status()
                     case _:
-                        raise Exception("Command {} not supported".format(res[0]))
+                        raise Exception(
+                            "Command {} not supported".format(res[0]))
                 self.response.send_string(res)
             except Exception as e:
                 self.response.send_string(
