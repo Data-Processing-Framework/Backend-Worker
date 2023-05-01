@@ -6,9 +6,17 @@ import sys
 from os import path
 
 sys.path.append(path.dirname(path.dirname(path.abspath(__file__))))
+from src.modules.input import input
 from src.modules.transform import transform
 from src.modules.output import output
-from src.data.modules import insertDB
+from src.data.modules import read_data
+from src.data.modules import transform_data
+from src.data.modules import insert_db
+from src.data.modules import insert_db_mysql
+from src.data.modules import read_numbers
+from src.data.modules import multiplication
+from src.data.modules import insert_number_db
+from src.data.modules import insert_number_db_mysql
 from src import broker
 from dotenv import load_dotenv
 
@@ -27,9 +35,11 @@ def publisher_thread():
     publisher.connect("tcp://127.0.0.1:5556")
 
     while True:
-        string = "input:" + str("1")
+        string = "input:" + str("./src/data/modules/file1.txt")
+        string3 = "input3:" + str("./src/data/modules/file2.csv")
         try:
             publisher.send_string(string)
+            publisher.send_string(string3)
         except zmq.ZMQError as e:
             if e.errno == zmq.ETERM:
                 break  # Interrupted
@@ -38,16 +48,25 @@ def publisher_thread():
         time.sleep(0.1)  # Wait for 1/10th second
 
 
-tr1 = transform("transform1", ["input"], process_item, 10)
-tr1.start()
-tr2 = transform("transform2", ["transform1"], process_item, 10)
-tr2.start()
-# Thread(target=broker.run).start()
+in1 = input("input1", ["input"], read_data.process_item, 1)
+in1.start()
+in2 = input("input2", ["input3"], read_numbers.process_item, 1)
+in2.start()
 
-tr3 = output("outpu1", ["transform1"], insertDB.process_item, 10)
-tr3.start()
-tr4 = output("outpu2", ["transform2"], process_item, 10)
-tr4.start()
+tr1 = transform("transform1", ["input1"], transform_data.process_item, 1)
+tr1.start()
+tr2 = transform("transform2", ["input2"], multiplication.process_item, 10)
+tr2.start()
+
+ou1 = output("outpu1", ["transform1"], insert_db.process_item, 1)
+ou1.start()
+ou2 = output("outpu2", ["transform1"], insert_db_mysql.process_item, 1)
+ou2.start()
+ou1 = output("outpu3", ["transform2"], insert_number_db.process_item, 1)
+ou1.start()
+ou2 = output("outpu4", ["transform2"], insert_number_db_mysql.process_item, 1)
+ou2.start()
+
 Thread(target=broker.run).start()
 
 
