@@ -16,14 +16,14 @@ class transform(threading.Thread):
         self.process_item = process_item
         self.n_workers = n_workers
         self.timeout = int(os.getenv("WORKER_TIMEOUT"))
-        self.subscriber_port = os.getenv("DATA_SUBSCRIBER_PORT")
-        self.publisher_port = os.getenv("DATA_PUBLISHER_PORT")
+        self.subscriber_addr = os.getenv("DATA_SUBSCRIBER_ADDRESS")
+        self.publisher_addr = os.getenv("DATA_PUBLISHER_ADDRESS")
         self.workers = queue.Queue()
 
     def worker(self, id, stopper):
         context = zmq.Context.instance()
         publisher = context.socket(zmq.PUB)
-        publisher.connect("tcp://127.0.0.1:" + self.publisher_port)
+        publisher.connect(self.publisher_addr)
 
         backend = context.socket(zmq.REQ)
         backend.identity = "Worker-{}-{}".format(self.name, id).encode("ascii")
@@ -64,7 +64,7 @@ class transform(threading.Thread):
         context = zmq.Context.instance()
 
         subscriber = context.socket(zmq.SUB)
-        subscriber.connect("tcp://127.0.0.1:" + self.subscriber_port)
+        subscriber.connect(self.subscriber_addr)
 
         stopper = multiprocessing.Value(c_bool, False)
 

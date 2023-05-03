@@ -1,11 +1,8 @@
-import time
-from threading import Thread
-import zmq
-
+from dotenv import load_dotenv
 import sys
 from os import path
-
 sys.path.append(path.dirname(path.dirname(path.abspath(__file__))))
+
 from src.modules.input import input
 from src.modules.transform import transform
 from src.modules.output import output
@@ -28,6 +25,10 @@ def process_item(message: str):
     return message
 
 
+def dummy_input():
+    return "dummy"
+
+
 def publisher_thread():
     ctx = zmq.Context.instance()
 
@@ -46,6 +47,7 @@ def publisher_thread():
             else:
                 raise
         time.sleep(0.1)  # Wait for 1/10th second
+
 
 
 in1 = input("input1", ["input"], read_data.process_item, 1)
