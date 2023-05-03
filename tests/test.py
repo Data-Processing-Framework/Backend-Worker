@@ -1,3 +1,6 @@
+import time
+from threading import Thread
+import zmq
 from dotenv import load_dotenv
 import sys
 from os import path
@@ -14,7 +17,7 @@ from src.data.modules import read_numbers
 from src.data.modules import multiplication
 from src.data.modules import insert_number_db
 from src.data.modules import insert_number_db_mysql
-from src import broker
+from src.broker import broker
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -50,9 +53,9 @@ def publisher_thread():
 
 
 
-in1 = input("input1", ["input"], read_data.process_item, 1)
+in1 = input("input1", read_data.process_item, 1)
 in1.start()
-in2 = input("input2", ["input3"], read_numbers.process_item, 1)
+in2 = input("input2", read_numbers.process_item, 10)
 in2.start()
 
 tr1 = transform("transform1", ["input1"], transform_data.process_item, 1)
@@ -69,7 +72,6 @@ ou1.start()
 ou2 = output("outpu4", ["transform2"], insert_number_db_mysql.process_item, 1)
 ou2.start()
 
-Thread(target=broker.run).start()
+br=broker()
 
-
-publisher_thread()
+br.start()
