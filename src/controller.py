@@ -29,31 +29,28 @@ class controller:
             raise Exception("Module {} not found".format(node["module"]))
         module = import_module("src.data.modules." + node["module"])
 
-        if self.isInput:
-            match (node["type"]):
-                case "Input":
-                    return input(node["name"], module.process_item, 1)
-                case _:
-                    pass
-        else:
-            match (node["type"]):
-                case "Transform":
-                    # TODO Decidir si volem que el client programi el process_item o tot el modul per tenir mes llibertat
-                    return transform(node["name"], node["inputs"], module.process_item, 1)
-                case "Output":
-                    pass
-                case _:
-                    pass
+        match (node["type"]):
+            case "Input":
+                return input(node["name"], module.process_item, 1)
+            case "Transform":
+                # TODO Decidir si volem que el client programi el process_item o tot el modul per tenir mes llibertat
+                return transform(node["name"], node["inputs"], module.process_item, 1)
+            case "Output":
+                pass
+            case _:
+                pass
         return "OK"
 
     def update_graph(self):
+        graph_file = open("./src/data/graph.json", "r")
+        graph = json.load(graph_file)
         if self.isInput:
             b = broker()
             self.nodes.append(b)
             b.start()
-
-        graph_file = open("./src/data/graph.json", "r")
-        self.graph = json.load(graph_file)
+            self.graph = [g for g in graph if g["type"] == "Input"]
+        else:
+            self.graph = [g for g in graph if g["type"] != "Input"]
 
         for a in self.graph:
             node = self.create_node(a)
@@ -71,7 +68,10 @@ class controller:
 
     def status(self):
         res = {"errors": []}
-        if len(self.graph) != len(self.nodes):
+        expectedLen = len(self.graph)
+        if self.isInput:
+            expectedLen += 1
+        if expectedLen != len(self.nodes):
             res["errors"].append(
                 {
                     "error": "Worker error",
@@ -99,8 +99,7 @@ class controller:
                     case "STATUS":
                         res = self.status()
                     case _:
-                        raise Exception(
-                            "Command {} not supported".format(res[0]))
+                        raise Exception("Command {} not supported".format(res[0]))
                 self.response.send_string(res)
             except Exception as e:
                 self.response.send_string(
