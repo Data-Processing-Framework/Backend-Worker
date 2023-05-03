@@ -16,7 +16,7 @@ class output(threading.Thread):
         self.process_item = process_item
         self.n_workers = n_workers
         self.timeout = int(os.getenv("WORKER_TIMEOUT"))
-        self.subscriber_port = os.getenv("DATA_SUBSCRIBER_PORT")
+        self.subscriber_addr= os.getenv("DATA_SUBSCRIBER_ADDRESS")
         self.workers = queue.Queue()
         logging.basicConfig(filename=self.name + ".log", level=logging.DEBUG)
 
@@ -62,7 +62,7 @@ class output(threading.Thread):
         context = zmq.Context.instance()
 
         subscriber = context.socket(zmq.SUB)
-        subscriber.connect("tcp://127.0.0.1:" + self.subscriber_port)
+        subscriber.connect(self.subscriber_addr)
 
         stopper = multiprocessing.Value(c_bool, False)
 

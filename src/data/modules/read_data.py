@@ -1,9 +1,10 @@
 # Read data from a file
 import os
 
-def process_item(message: str):
+def process_item():
     try:
-        message = message.split(":")[1]
+        # message = message.split(":")[1]
+        message = "./src/data/modules/file1.txt"
         # message -> ./app/data/file.txt
         splitted = message.split("/")
         file_name = splitted[len(splitted)-1]

@@ -1,9 +1,10 @@
 # Read 2 numbers form csv file
 import os
 
-def process_item(message: str):
+def process_item():
     try:
-        message = message.split(":")[1]
+        # message = message.split(":")[1]
+        message = "./src/data/modules/file2.csv"
         # message -> ./app/data/file.txt
         splitted = message.split("/")
         print(splitted)
