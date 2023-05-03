@@ -34,11 +34,15 @@ class input(threading.Thread):
         context = zmq.Context.instance()
         publisher = context.socket(zmq.PUB)
         publisher.connect(self.publisher_addr)
+        master = ""
 
+        time.sleep(5)
         while not self.stopper:
             try:
                 result = self.process_item()
-                publisher.send_string(self.name + ":" + result)
+                if result != master:
+                    master = result
+                    publisher.send_string(self.name + ":" + result)
                 time.sleep(self.polling_time)
             except zmq.ContextTerminated:
                 continue
