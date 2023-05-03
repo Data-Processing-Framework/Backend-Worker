@@ -41,8 +41,3 @@ class broker(threading.Thread):
         subscriber.bind(os.getenv("DATA_PUBLISHER_ADDRESS"))
 
         zmq.proxy(subscriber, publisher)
-
-
-test = broker()
-test.start()
-print(test.status())
