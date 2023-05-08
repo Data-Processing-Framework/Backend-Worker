@@ -37,7 +37,7 @@ class output(threading.Thread):
             if backend in sockets:
                 request = backend.recv_string()
                 print("{}: {}".format(backend.identity.decode("ascii"), request))
-                result = self.process_item(request.split(self.name + ":")[1])
+                result = self.process_item(request.split(":", 1)[1])
                 if result is not None and type(result) == str:
                     logging.debug(result)
                 backend.send(b"OK")
