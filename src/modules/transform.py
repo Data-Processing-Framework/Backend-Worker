@@ -38,7 +38,7 @@ class transform(threading.Thread):
             if backend in sockets:
                 request = backend.recv_string()
                 print("{}: {}".format(backend.identity.decode("ascii"), request))
-                result = self.process_item(request)
+                result = self.process_item(request.split(self.name + ":")[1])
                 publisher.send_string(self.name + ":" + result)
                 backend.send(b"OK")
         publisher.close()
