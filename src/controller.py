@@ -5,6 +5,7 @@ from importlib import import_module
 from src.modules.transform import transform
 from src.modules.input import input
 from src.broker import broker
+from src.internal_bus import internal_bus
 
 
 class controller:
@@ -33,7 +34,6 @@ class controller:
             case "Input":
                 return input(node["name"], module.process_item, 1)
             case "Transform":
-                # TODO Decidir si volem que el client programi el process_item o tot el modul per tenir mes llibertat
                 return transform(node["name"], node["inputs"], module.process_item, 1)
             case "Output":
                 pass
@@ -51,6 +51,9 @@ class controller:
             self.graph = [g for g in graph if g["type"] == "Input"]
         else:
             self.graph = [g for g in graph if g["type"] != "Input"]
+            ib = internal_bus()
+            self.nodes.append(ib)
+            ib.start()
 
         for a in self.graph:
             node = self.create_node(a)

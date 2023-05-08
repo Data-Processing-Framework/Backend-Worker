@@ -16,8 +16,8 @@ class transform(threading.Thread):
         self.process_item = process_item
         self.n_workers = n_workers
         self.timeout = int(os.getenv("WORKER_TIMEOUT"))
-        self.subscriber_addr = os.getenv("DATA_SUBSCRIBER_ADDRESS")
-        self.publisher_addr = os.getenv("DATA_PUBLISHER_ADDRESS")
+        self.subscriber_addr = os.getenv("INTERNAL_SUBSCRIBER_ADDRESS")
+        self.publisher_addr = os.getenv("INTERNAL_PUBLISHER_ADDRESS")
         self.workers = queue.Queue()
 
     def worker(self, id, stopper):

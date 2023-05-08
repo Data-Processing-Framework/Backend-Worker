@@ -4,6 +4,7 @@ import zmq
 from dotenv import load_dotenv
 import sys
 from os import path
+
 sys.path.append(path.dirname(path.dirname(path.abspath(__file__))))
 
 from src.modules.input import input
@@ -17,6 +18,7 @@ from src.data.modules import read_numbers
 from src.data.modules import multiplication
 from src.data.modules import insert_number_db
 from src.data.modules import insert_number_db_mysql
+from src.internal_bus import internal_bus
 from src.broker import broker
 from dotenv import load_dotenv
 
@@ -52,6 +54,11 @@ def publisher_thread():
         time.sleep(0.1)  # Wait for 1/10th second
 
 
+br = broker()
+br.start()
+
+ib = internal_bus()
+ib.start()
 
 in1 = input("input1", read_data.process_item, 1)
 in1.start()
@@ -71,7 +78,3 @@ ou1 = output("outpu3", ["transform2"], insert_number_db.process_item, 1)
 ou1.start()
 ou2 = output("outpu4", ["transform2"], insert_number_db_mysql.process_item, 1)
 ou2.start()
-
-br=broker()
-
-br.start()

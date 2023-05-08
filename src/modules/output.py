@@ -17,7 +17,7 @@ class output(threading.Thread):
         self.process_item = process_item
         self.n_workers = n_workers
         self.timeout = int(os.getenv("WORKER_TIMEOUT"))
-        self.subscriber_addr = os.getenv("DATA_SUBSCRIBER_ADDRESS")
+        self.subscriber_addr = os.getenv("INTERNAL_SUBSCRIBER_ADDRESS")
         self.workers = queue.Queue()
         logging.basicConfig(filename=self.name + ".log", level=logging.DEBUG)
 

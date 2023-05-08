@@ -12,5 +12,5 @@ if os.getenv("DEBUG") == "1":
 
 else:
     c = controller()
-    c.status()
+    print(c.status())
     c.run()
