@@ -67,7 +67,7 @@ class controller:
         context = zmq.Context.instance()
         context.term()
         for node in self.nodes:
-            if isinstance(node, broker):
+            if isinstance(node, broker) or isinstance(node, internal_bus):
                 node.stop()
         self.nodes = []
         return "OK"
