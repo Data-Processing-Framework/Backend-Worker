@@ -108,6 +108,9 @@ class transform(threading.Thread):
                         backend_ready = False
             except zmq.ContextTerminated:
                 break
+            except Exception:
+                continue
+
         stopper.value = True
         while not self.workers.empty:
             w = self.workers.get()

@@ -10,7 +10,6 @@ class input(threading.Thread):
         self.name = name
         self.process_item = process_item
         self.publisher_addr = os.getenv("DATA_PUBLISHER_ADDRESS")
-        self.stopper = False
         self.polling_time = polling_time
 
     def status(self):
@@ -24,7 +23,7 @@ class input(threading.Thread):
         master = ""
 
         time.sleep(5)
-        while not self.stopper:
+        while True:
             try:
                 result = self.process_item()
                 # if result != master:
@@ -32,5 +31,8 @@ class input(threading.Thread):
                 publisher.send_string(self.name + ":" + result)
                 time.sleep(self.polling_time)
             except zmq.ContextTerminated:
+                break
+            except Exception:
                 continue
+
         publisher.close()

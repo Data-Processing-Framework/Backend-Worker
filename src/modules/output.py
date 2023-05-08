@@ -6,6 +6,7 @@ from ctypes import c_bool
 import queue
 import logging
 
+
 class output(threading.Thread):
     def __init__(
         self, name: str, sub_topics: list, process_item: callable, n_workers: int
@@ -16,7 +17,7 @@ class output(threading.Thread):
         self.process_item = process_item
         self.n_workers = n_workers
         self.timeout = int(os.getenv("WORKER_TIMEOUT"))
-        self.subscriber_addr= os.getenv("DATA_SUBSCRIBER_ADDRESS")
+        self.subscriber_addr = os.getenv("DATA_SUBSCRIBER_ADDRESS")
         self.workers = queue.Queue()
         logging.basicConfig(filename=self.name + ".log", level=logging.DEBUG)
 
@@ -106,6 +107,9 @@ class output(threading.Thread):
                         backend_ready = False
             except zmq.ContextTerminated:
                 break
+            except Exception:
+                continue
+
         stopper.value = True
         while not self.workers.empty:
             w = self.workers.get()
