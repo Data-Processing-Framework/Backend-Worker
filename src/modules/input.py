@@ -27,9 +27,9 @@ class input(threading.Thread):
         while not self.stopper:
             try:
                 result = self.process_item()
-                if result != master:
-                    master = result
-                    publisher.send_string(self.name + ":" + result)
+                # if result != master:
+                master = result
+                publisher.send_string(self.name + ":" + result)
                 time.sleep(self.polling_time)
             except zmq.ContextTerminated:
                 continue
