@@ -5,6 +5,10 @@ import time
 
 
 class broker(threading.Thread):
+    def __init__(self) -> None:
+        threading.Thread.__init__(self)
+        self.ctx = zmq.Context()
+
     def status(self):
         ret = {"errors": []}
         ctx = zmq.Context()
@@ -33,11 +37,16 @@ class broker(threading.Thread):
             ret["errors"].append("Broker didn't respond to heartbeat within 1 second")
         return ret
 
-    def run(self):
-        ctx = zmq.Context()
-        publisher = ctx.socket(zmq.XPUB)
-        publisher.bind(os.getenv("DATA_SUBSCRIBER_ADDRESS"))
-        subscriber = ctx.socket(zmq.XSUB)
-        subscriber.bind(os.getenv("DATA_PUBLISHER_ADDRESS"))
+    def stop(self):
+        self.ctx.term()
 
-        zmq.proxy(subscriber, publisher)
+    def run(self):
+        try:
+            publisher = self.ctx.socket(zmq.XPUB)
+            publisher.bind(os.getenv("DATA_SUBSCRIBER_ADDRESS"))
+            subscriber = self.ctx.socket(zmq.XSUB)
+            subscriber.bind(os.getenv("DATA_PUBLISHER_ADDRESS"))
+
+            zmq.proxy(subscriber, publisher)
+        except Exception as e:
+            pass

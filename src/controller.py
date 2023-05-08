@@ -63,6 +63,9 @@ class controller:
     def stop(self):
         context = zmq.Context.instance()
         context.term()
+        for node in self.nodes:
+            if isinstance(node, broker):
+                node.stop()
         self.nodes = []
         return "OK"
 
