@@ -49,10 +49,12 @@ class internal_bus(threading.Thread):
     def run(self):
         publisher = self.ctx.socket(zmq.PUB)
         publisher.bind(self.subscriber_addr)
+        publisher.setsockopt(zmq.LINGER, 0)
 
         subsciber = self.ctx.socket(zmq.SUB)
         subsciber.bind(self.publisher_addr)
         subsciber.subscribe("")
+        subsciber.setsockopt(zmq.LINGER, 0)
 
         backend = self.ctx.socket(zmq.REQ)
         backend.identity = "Internal-Bus-{}".format(socket.gethostname()).encode(
@@ -60,6 +62,7 @@ class internal_bus(threading.Thread):
         )
         backend.connect(self.inputs_addr)
         backend.send(b"READY")
+        backend.setsockopt(zmq.LINGER, 0)
 
         poller = zmq.Poller()
         poller.register(backend, zmq.POLLIN)
@@ -84,4 +87,5 @@ class internal_bus(threading.Thread):
                 continue
 
         publisher.close()
+        subsciber.close()
         backend.close()

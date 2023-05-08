@@ -65,6 +65,7 @@ class controller:
 
     def stop(self):
         context = zmq.Context.instance()
+        context.setsockopt(zmq.LINGER, 0)
         context.term()
         for node in self.nodes:
             if isinstance(node, broker) or isinstance(node, internal_bus):
@@ -74,9 +75,7 @@ class controller:
 
     def status(self):
         res = {"errors": []}
-        expectedLen = len(self.graph)
-        if self.isInput:
-            expectedLen += 1
+        expectedLen = len(self.graph) + 1
         if expectedLen != len(self.nodes):
             res["errors"].append(
                 {

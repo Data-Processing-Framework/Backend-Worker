@@ -34,9 +34,11 @@ class broker(threading.Thread):
         subscriber = self.ctx.socket(zmq.SUB)
         subscriber.bind(os.getenv("DATA_PUBLISHER_ADDRESS"))
         subscriber.subscribe("")
+        subscriber.setsockopt(zmq.LINGER, 0)
 
         backend = self.ctx.socket(zmq.ROUTER)
         backend.bind(os.getenv("INPUT_SUBSCRIBER_ADDRESS"))
+        backend.setsockopt(zmq.LINGER, 0)
 
         backend_ready = False
         workers = []
