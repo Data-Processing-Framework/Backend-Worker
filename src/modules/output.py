@@ -111,7 +111,7 @@ class output(threading.Thread):
                 continue
 
         stopper.value = True
-        while not self.workers.empty:
+        while not self.workers.empty():
             w = self.workers.get()
             w.join()
         backend.close()
