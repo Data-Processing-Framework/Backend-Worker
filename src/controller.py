@@ -51,9 +51,14 @@ class controller:
             self.graph = [g for g in graph if g["type"] == "Input"]
         else:
             self.graph = [g for g in graph if g["type"] != "Input"]
-            ib = internal_bus()
-            self.nodes.append(ib)
-            ib.start()
+            aux = True
+            for node in self.nodes:
+                if isinstance(node, internal_bus):
+                    aux = False
+            if aux:
+                ib = internal_bus()
+                self.nodes.append(ib)
+                ib.start()
 
         for a in self.graph:
             node = self.create_node(a)
@@ -67,10 +72,15 @@ class controller:
         context = zmq.Context.instance()
         context.setsockopt(zmq.LINGER, 0)
         context.term()
+        aux = []
         for node in self.nodes:
-            if isinstance(node, broker) or isinstance(node, internal_bus):
+            if isinstance(node, broker):
                 node.stop()
-        self.nodes = []
+
+        for node in self.nodes:
+            if isinstance(node, internal_bus):
+                aux.append(node)
+        self.nodes = aux
         return "OK"
 
     def status(self):
