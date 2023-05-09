@@ -8,7 +8,6 @@ import socket
 class internal_bus(threading.Thread):
     def __init__(self) -> None:
         threading.Thread.__init__(self)
-        self.ctx = zmq.Context()
         self.subscriber_addr = os.getenv("INTERNAL_SUBSCRIBER_ADDRESS")
         self.publisher_addr = os.getenv("INTERNAL_PUBLISHER_ADDRESS")
         self.inputs_addr = os.getenv("INPUT_SUBSCRIBER_ADDRESS")
@@ -16,9 +15,10 @@ class internal_bus(threading.Thread):
 
     def status(self):
         ret = {"errors": []}
-        pub = self.ctx.socket(zmq.PUB)
+        ctx = zmq.Context.instance()
+        pub = ctx.socket(zmq.PUB)
         pub.connect(self.publisher_addr)
-        sub = self.ctx.socket(zmq.SUB)
+        sub = ctx.socket(zmq.SUB)
         sub.connect(self.subscriber_addr)
         sub.subscribe("status")
 
@@ -43,20 +43,18 @@ class internal_bus(threading.Thread):
         pub.close()
         return ret
 
-    def stop(self):
-        self.ctx.term()
-
     def run(self):
-        publisher = self.ctx.socket(zmq.PUB)
+        ctx = zmq.Context.instance()
+        publisher = ctx.socket(zmq.PUB)
         publisher.bind(self.subscriber_addr)
         publisher.setsockopt(zmq.LINGER, 0)
 
-        subsciber = self.ctx.socket(zmq.SUB)
+        subsciber = ctx.socket(zmq.SUB)
         subsciber.bind(self.publisher_addr)
         subsciber.subscribe("")
         subsciber.setsockopt(zmq.LINGER, 0)
 
-        backend = self.ctx.socket(zmq.REQ)
+        backend = ctx.socket(zmq.REQ)
         backend.identity = "Internal-Bus-{}".format(socket.gethostname()).encode(
             "ascii"
         )

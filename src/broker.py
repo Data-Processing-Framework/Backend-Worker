@@ -6,13 +6,13 @@ import os
 class broker(threading.Thread):
     def __init__(self) -> None:
         threading.Thread.__init__(self)
-        self.ctx = zmq.Context()
         self.name = "broker"
 
     def status(self):
         ret = {"errors": []}
+        ctx = zmq.Context.instance()
 
-        backend = self.ctx.socket(zmq.REQ)
+        backend = ctx.socket(zmq.REQ)
         backend.identity = "heartbeat".encode("ascii")
         backend.connect(os.getenv("INPUT_SUBSCRIBER_ADDRESS"))
         backend.send(b"READY")
@@ -26,17 +26,14 @@ class broker(threading.Thread):
         backend.close()
         return ret
 
-    def stop(self):
-        self.ctx.term()
-
     def run(self):
-
-        subscriber = self.ctx.socket(zmq.SUB)
+        ctx = zmq.Context.instance()
+        subscriber = ctx.socket(zmq.SUB)
         subscriber.bind(os.getenv("DATA_PUBLISHER_ADDRESS"))
         subscriber.subscribe("")
         subscriber.setsockopt(zmq.LINGER, 0)
 
-        backend = self.ctx.socket(zmq.ROUTER)
+        backend = ctx.socket(zmq.ROUTER)
         backend.bind(os.getenv("INPUT_SUBSCRIBER_ADDRESS"))
         backend.setsockopt(zmq.LINGER, 0)
 
