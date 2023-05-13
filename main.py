@@ -1,6 +1,7 @@
 from src.controller import controller
 from dotenv import load_dotenv
 import os
+import time
 
 load_dotenv()
 
@@ -12,5 +13,4 @@ if os.getenv("DEBUG") == "1":
 
 else:
     c = controller()
-    print(c.status())
     c.run()

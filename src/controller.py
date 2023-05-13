@@ -6,6 +6,7 @@ from src.modules.transform import transform
 from src.modules.input import input
 from src.broker import broker
 from src.internal_bus import internal_bus
+import threading
 
 
 class controller:
@@ -17,6 +18,9 @@ class controller:
         self.response = context.socket(zmq.PUB)
         self.response.connect(os.getenv("CONTROLLER_RESPONSE_ADDRESS"))
         self.isInput = int(os.getenv("IS_INPUT"))
+        self.isRestarting = threading.Event()
+        self.isStopped = threading.Event()
+        self.isStopped.set()
 
         self.nodes = []
         self.n_nodes = 0
@@ -60,19 +64,23 @@ class controller:
             if node != "OK":
                 self.nodes.append(node)
                 node.start()
-
+        self.isStopped.clear()
         return "OK"
 
     def stop(self):
+        self.isStopped.set()
         context = zmq.Context.instance()
         context.setsockopt(zmq.LINGER, 0)
         context.term()
-
         self.nodes = []
         return "OK"
 
     def status(self):
         res = {"errors": []}
+        if self.isRestarting.is_set():
+            return json.dumps({"status": "RESTARTING"})
+        if self.isStopped.is_set():
+            return json.dumps({"status": "STOPPED"})
         expectedLen = len(self.graph) + 1
         if expectedLen != len(self.nodes):
             res["errors"].append(
@@ -85,7 +93,16 @@ class controller:
         for node in self.nodes:
             res[node.name] = node.status()
 
+        if res["errors"] == []:
+            return json.dumps({"status": "RUNNING"})
+        res["status"] = "ERROR"
         return json.dumps(res)
+
+    def restart(self):
+        self.isRestarting.set()
+        self.stop()
+        self.update_graph()
+        self.isRestarting.clear()
 
     def run(self):
         while True:
@@ -95,10 +112,11 @@ class controller:
                     case "START":
                         res = self.update_graph()
                     case "STOP":
-                        res = self.stop()
+                        threading.Thread(target=self.stop).start()
+                        res = "OK"
                     case "RESTART":
-                        self.stop()
-                        res = self.update_graph()
+                        threading.Thread(target=self.restart).start()
+                        res = "OK"
                     case "STATUS":
                         res = self.status()
                     case _:
