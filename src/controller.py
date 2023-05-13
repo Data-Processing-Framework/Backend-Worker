@@ -81,7 +81,9 @@ class controller:
         return "OK"
 
     def status(self):
-        res = {"errors": []}
+
+        type = "Input Worker" if self.isInput else "Worker"
+        res = {"type": type, "errors": []}
         if self.isRestarting.is_set():
             return json.dumps({"status": "RESTARTING"})
         if self.isStopped.is_set():
