@@ -46,6 +46,9 @@ class controller:
         return "OK"
 
     def update_graph(self):
+        if not self.isStopped.is_set():
+            return "System is running"
+
         graph_file = open("./src/data/graph.json", "r")
         graph = json.load(graph_file)
         if self.isInput:
@@ -68,6 +71,8 @@ class controller:
         return "OK"
 
     def stop(self):
+        if self.isStopped.is_set():
+            return
         self.isStopped.set()
         context = zmq.Context.instance()
         context.setsockopt(zmq.LINGER, 0)
@@ -99,6 +104,8 @@ class controller:
         return json.dumps(res)
 
     def restart(self):
+        if self.isRestarting.is_set():
+            return
         self.isRestarting.set()
         self.stop()
         self.update_graph()
