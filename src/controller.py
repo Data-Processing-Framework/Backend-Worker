@@ -85,9 +85,9 @@ class controller:
         type = "Input Worker" if self.isInput else "Worker"
         res = {"type": type, "errors": []}
         if self.isRestarting.is_set():
-            return json.dumps({"status": "RESTARTING"})
+            return json.dumps({"type": type, "status": "RESTARTING"})
         if self.isStopped.is_set():
-            return json.dumps({"status": "STOPPED"})
+            return json.dumps({"type": type, "status": "STOPPED"})
         expectedLen = len(self.graph) + 1
         if expectedLen != len(self.nodes):
             res["errors"].append(
@@ -101,7 +101,7 @@ class controller:
             res[node.name] = node.status()
 
         if res["errors"] == []:
-            return json.dumps({"status": "RUNNING"})
+            return json.dumps({"type": type, "status": "RUNNING"})
         res["status"] = "ERROR"
         return json.dumps(res)
 
