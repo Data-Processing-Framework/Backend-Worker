@@ -47,7 +47,7 @@ class controller:
         return "OK"
 
     def update_graph(self):
-        if not self.isStopped.is_set():
+        if not self.isStopped.is_set() or not self.isStopping.is_set():
             return "System is running"
 
         graph_file = open("./src/data/graph.json", "r")
