@@ -21,6 +21,7 @@ class controller:
         self.isRestarting = threading.Event()
         self.isStopped = threading.Event()
         self.isStopped.set()
+        self.isStopping = threading.Event()
 
         self.nodes = []
         self.n_nodes = 0
@@ -71,13 +72,15 @@ class controller:
         return "OK"
 
     def stop(self):
-        if self.isStopped.is_set():
+        if self.isStopped.is_set() or self.isStopping.is_set():
             return
+        self.isStopping.set()
         context = zmq.Context.instance()
         context.setsockopt(zmq.LINGER, 0)
         context.term()
         self.nodes = []
         self.isStopped.set()
+        self.isStopping.clear()
         return "OK"
 
     def status(self):
@@ -86,6 +89,8 @@ class controller:
         res = {"type": type, "errors": []}
         if self.isRestarting.is_set():
             return json.dumps({"type": type, "status": "RESTARTING"})
+        if self.isStopping.is_set():
+            return json.dumps({"type": type, "status": "STOPPING"})
         if self.isStopped.is_set():
             return json.dumps({"type": type, "status": "STOPPED"})
         expectedLen = len(self.graph) + 1
