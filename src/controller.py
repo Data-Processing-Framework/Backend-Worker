@@ -73,11 +73,11 @@ class controller:
     def stop(self):
         if self.isStopped.is_set():
             return
-        self.isStopped.set()
         context = zmq.Context.instance()
         context.setsockopt(zmq.LINGER, 0)
         context.term()
         self.nodes = []
+        self.isStopped.set()
         return "OK"
 
     def status(self):
