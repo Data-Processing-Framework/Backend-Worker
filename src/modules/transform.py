@@ -4,6 +4,7 @@ import os
 import threading
 from ctypes import c_bool
 import queue
+import logging
 
 
 class transform(threading.Thread):
@@ -19,6 +20,7 @@ class transform(threading.Thread):
         self.subscriber_addr = os.getenv("INTERNAL_SUBSCRIBER_ADDRESS")
         self.publisher_addr = os.getenv("INTERNAL_PUBLISHER_ADDRESS")
         self.workers = queue.Queue()
+        self.logger = logging.getLogger(self.name)
 
     def worker(self, id, stopper):
         context = zmq.Context.instance()
@@ -39,6 +41,7 @@ class transform(threading.Thread):
                 request = backend.recv_string()
                 print("{}: {}".format(backend.identity.decode("ascii"), request))
                 result = self.process_item(request.split(":", 1)[1])
+                self.logger.info(request + " -> " + result)
                 publisher.send_string(self.name + ":" + result)
                 backend.send(b"OK")
         publisher.close()

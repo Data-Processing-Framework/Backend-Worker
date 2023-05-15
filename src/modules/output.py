@@ -20,6 +20,7 @@ class output(threading.Thread):
         self.subscriber_addr = os.getenv("INTERNAL_SUBSCRIBER_ADDRESS")
         self.workers = queue.Queue()
         logging.basicConfig(filename=self.name + ".log", level=logging.DEBUG)
+        self.logger = logging.getLogger(self.name)
 
     def worker(self, id, stopper):
         context = zmq.Context.instance()
@@ -37,6 +38,7 @@ class output(threading.Thread):
             if backend in sockets:
                 request = backend.recv_string()
                 print("{}: {}".format(backend.identity.decode("ascii"), request))
+                self.logger.info(request)
                 result = self.process_item(request.split(":", 1)[1])
                 if result is not None and type(result) == str:
                     logging.debug(result)

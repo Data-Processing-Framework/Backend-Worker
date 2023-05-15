@@ -7,6 +7,9 @@ from src.modules.input import input
 from src.broker import broker
 from src.internal_bus import internal_bus
 import threading
+from src.logger import logger
+import pymssql
+import logging
 
 
 class controller:
@@ -22,12 +25,24 @@ class controller:
         self.isStopped = threading.Event()
         self.isStopped.set()
         self.isStopping = threading.Event()
+        self.init_logger()
 
         self.nodes = []
         self.n_nodes = 0
         res = self.update_graph()
         if res != "OK":
             raise Exception(res)
+
+    def init_logger(self):
+        db_server = os.getenv("LOGGING_DB_ADDRESS")
+        db_user = os.getenv("LOGGING_DB_USER")
+        db_password = os.getenv("LOGGING_DB_PASSWORD")
+        db_dbname = os.getenv("LOGGING_DB_NAME")
+        db_tbl_log = "Input Worker" if self.isInput else "Worker"
+        log_conn = pymssql.connect(db_server, db_user, db_password, db_dbname, 30)
+        log_cursor = log_conn.cursor()
+        logdb = logger(log_conn, log_cursor, db_tbl_log)
+        logging.getLogger("").addHandler(logdb)
 
     def create_node(self, node):
         module_path = "./src/data/modules/{}.py".format(node["module"])

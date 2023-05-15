@@ -2,6 +2,7 @@ import zmq
 import os
 import threading
 import time
+import logging
 
 
 class input(threading.Thread):
@@ -11,6 +12,7 @@ class input(threading.Thread):
         self.process_item = process_item
         self.publisher_addr = os.getenv("DATA_PUBLISHER_ADDRESS")
         self.polling_time = polling_time
+        self.logger = logging.getLogger(self.name)
 
     def status(self):
         res = {"errors": []}
@@ -26,6 +28,7 @@ class input(threading.Thread):
         while True:
             try:
                 result = self.process_item()
+                self.logger.info(result)
                 # if result != master:
                 master = result
                 publisher.send_string(self.name + ":" + result)
