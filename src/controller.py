@@ -4,12 +4,14 @@ import json
 from importlib import import_module
 from src.modules.transform import transform
 from src.modules.input import input
+from src.modules.output import output
 from src.broker import broker
 from src.internal_bus import internal_bus
 import threading
 from src.logger import logger
-import pymssql
+import mysql.connector
 import logging
+import time
 
 
 class controller:
@@ -38,28 +40,48 @@ class controller:
         db_user = os.getenv("LOGGING_DB_USER")
         db_password = os.getenv("LOGGING_DB_PASSWORD")
         db_dbname = os.getenv("LOGGING_DB_NAME")
-        db_tbl_log = "Input Worker" if self.isInput else "Worker"
-        #log_conn = pymssql.connect(db_server, db_user, db_password, db_dbname, 30)
-        #log_cursor = log_conn.cursor()
-        #logdb = logger(log_conn, log_cursor, db_tbl_log)
-        #logging.getLogger("").addHandler(logdb)
+        log_conn = ""
+        while not isinstance(
+            log_conn, mysql.connector.connection_cext.CMySQLConnection
+        ):
+            try:
+                log_conn = mysql.connector.connect(
+                    host=db_server,
+                    user=db_user,
+                    password=db_password,
+                    database=db_dbname,
+                )
+            except Exception:
+                print("Waiting for logging database")
+                time.sleep(1)
+                continue
+        log_cursor = log_conn.cursor()
+        logdb = logger(log_conn, log_cursor)
+        l = logging.getLogger("")
+        l.addHandler(logdb)
+        l.setLevel(logging.INFO)
 
     def create_node(self, node):
-        module_path = "./src/data/modules/{}.py".format(node["module"])
-        if not os.path.isfile(module_path):
-            raise Exception("Module {} not found".format(node["module"]))
-        module = import_module("src.data.modules." + node["module"])
+        try:
+            module_path = "./src/data/modules/{}.py".format(node["module"])
+            if not os.path.isfile(module_path):
+                raise Exception("Module {} not found".format(node["module"]))
+            module = import_module("src.data.modules." + node["module"])
 
-        match (node["type"]):
-            case "Input":
-                return input(node["name"], module.process_item, 1)
-            case "Transform":
-                return transform(node["name"], node["inputs"], module.process_item, 1)
-            case "Output":
-                pass
-            case _:
-                pass
-        return "OK"
+            match (node["type"]):
+                case "Input":
+                    return input(node["name"], module.process_item, 1)
+                case "Transform":
+                    return transform(
+                        node["name"], node["inputs"], module.process_item, 1
+                    )
+                case "Output":
+                    return output(node["name"], node["inputs"], module.process_item, 1)
+                case _:
+                    return "Error"
+        except Exception as e:
+            print(e)
+            return "Error"
 
     def update_graph(self):
         if not self.isStopped.is_set() or self.isStopping.is_set():
@@ -80,7 +102,7 @@ class controller:
 
         for a in self.graph:
             node = self.create_node(a)
-            if node != "OK":
+            if node != "Error":
                 self.nodes.append(node)
                 node.start()
         self.isStopped.clear()
