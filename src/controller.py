@@ -55,8 +55,8 @@ class controller:
                 print("Waiting for logging database")
                 time.sleep(1)
                 continue
-        log_cursor = log_conn.cursor()
-        logdb = logger(log_conn, log_cursor)
+        log_conn.close()
+        logdb = logger(db_server, db_user, db_password, db_dbname)
         l = logging.getLogger("")
         l.addHandler(logdb)
         l.setLevel(logging.INFO)
