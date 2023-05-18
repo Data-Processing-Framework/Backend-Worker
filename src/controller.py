@@ -4,6 +4,7 @@ import json
 from importlib import import_module
 from src.modules.transform import transform
 from src.modules.input import input
+from src.modules.output import output
 from src.broker import broker
 from src.internal_bus import internal_bus
 import threading
@@ -61,21 +62,25 @@ class controller:
         l.setLevel(logging.INFO)
 
     def create_node(self, node):
-        module_path = "./src/data/modules/{}.py".format(node["module"])
-        if not os.path.isfile(module_path):
-            raise Exception("Module {} not found".format(node["module"]))
-        module = import_module("src.data.modules." + node["module"])
+        try:
+            module_path = "./src/data/modules/{}.py".format(node["module"])
+            if not os.path.isfile(module_path):
+                raise Exception("Module {} not found".format(node["module"]))
+            module = import_module("src.data.modules." + node["module"])
 
-        match (node["type"]):
-            case "Input":
-                return input(node["name"], module.process_item, 1)
-            case "Transform":
-                return transform(node["name"], node["inputs"], module.process_item, 1)
-            case "Output":
-                pass
-            case _:
-                pass
-        return "OK"
+            match (node["type"]):
+                case "Input":
+                    return input(node["name"], module.process_item, 1)
+                case "Transform":
+                    return transform(
+                        node["name"], node["inputs"], module.process_item, 1
+                    )
+                case "Output":
+                    return output(node["name"], node["inputs"], module.process_item, 1)
+                case _:
+                    return "Error"
+        except Exception as e:
+            return "Error"
 
     def update_graph(self):
         if not self.isStopped.is_set() or self.isStopping.is_set():
@@ -96,7 +101,7 @@ class controller:
 
         for a in self.graph:
             node = self.create_node(a)
-            if node != "OK":
+            if node != "Error":
                 self.nodes.append(node)
                 node.start()
         self.isStopped.clear()
