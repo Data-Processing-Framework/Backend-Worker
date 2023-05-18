@@ -41,8 +41,13 @@ class transform(threading.Thread):
                 request = backend.recv_string()
                 print("{}: {}".format(backend.identity.decode("ascii"), request))
                 message = request.split(":", 1)[1]
-                result = self.process_item(message)
-                self.logger.info(message + " -> " + result)
+                try:
+                    result = self.process_item(message)
+                    self.logger.info(message + " -> " + result)
+                except Exception as e:
+                    self.logger.error(str(e))
+                    backend.send(b"OK")
+                    continue
                 publisher.send_string(self.name + ":" + result)
                 backend.send(b"OK")
         publisher.close()

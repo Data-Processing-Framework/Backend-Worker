@@ -39,13 +39,15 @@ class output(threading.Thread):
             if backend in sockets:
                 request = backend.recv_string()
                 print("{}: {}".format(backend.identity.decode("ascii"), request))
-                self.logger.info(request)
                 message = request.split(":", 1)[1]
-                result = self.process_item(message)
-                if result is not None and type(result) == str:
-                    logging.debug(message + " -> " + result)
-                else:
-                    logging.debug(message + " -> " + "OK")
+                try:
+                    self.process_item(message)
+                    self.logger.info(message + " -> OK")
+
+                except Exception as e:
+                    self.logger.error(str(e))
+                    backend.send(b"OK")
+                    continue
                 backend.send(b"OK")
         backend.close()
         context.term()
