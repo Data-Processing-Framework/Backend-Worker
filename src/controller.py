@@ -12,16 +12,18 @@ from src.logger import logger
 import mysql.connector
 import logging
 import time
+import socket
 
 
 class controller:
     def __init__(self) -> None:
         context = zmq.Context()
+        self.graph = []
         self.subscriber = context.socket(zmq.SUB)
         self.subscriber.connect(os.getenv("CONTROLLER_REQUEST_ADDRESS"))
         self.subscriber.subscribe("")
-        self.response = context.socket(zmq.PUB)
-        self.response.connect(os.getenv("CONTROLLER_RESPONSE_ADDRESS"))
+        self.status_bus = context.socket(zmq.PUB)
+        self.status_bus.connect(os.getenv("CONTROLLER_STATUS_ADDRESS"))
         self.isInput = int(os.getenv("IS_INPUT"))
         self.isRestarting = threading.Event()
         self.isStopped = threading.Event()
@@ -31,9 +33,7 @@ class controller:
 
         self.nodes = []
         self.n_nodes = 0
-        res = self.update_graph()
-        if res != "OK":
-            raise Exception(res)
+        self.update_graph()
 
     def init_logger(self):
         db_server = os.getenv("LOGGING_DB_ADDRESS")
@@ -86,7 +86,7 @@ class controller:
     def update_graph(self):
         if not self.isStopped.is_set() or self.isStopping.is_set():
             return "System is running"
-
+        self.isStopped.clear()
         graph_file = open("./src/data/graph.json", "r")
         graph = json.load(graph_file)
         if self.isInput:
@@ -105,47 +105,55 @@ class controller:
             if node != "Error":
                 self.nodes.append(node)
                 node.start()
-        self.isStopped.clear()
-        return "OK"
+        self.status()
 
     def stop(self):
         if self.isStopped.is_set() or self.isStopping.is_set():
             return
         self.isStopping.set()
+        self.status()
         context = zmq.Context.instance()
         context.setsockopt(zmq.LINGER, 0)
         context.term()
         self.nodes = []
         self.isStopped.set()
         self.isStopping.clear()
-        return "OK"
+        self.status()
 
     def status(self):
-
         type = "Input Worker" if self.isInput else "Worker"
-        res = {"type": type, "errors": []}
-        if self.isRestarting.is_set():
-            return json.dumps({"type": type, "status": "RESTARTING"})
-        if self.isStopping.is_set():
-            return json.dumps({"type": type, "status": "STOPPING"})
-        if self.isStopped.is_set():
-            return json.dumps({"type": type, "status": "STOPPED"})
-        expectedLen = len(self.graph) + 1
-        if expectedLen != len(self.nodes):
-            res["errors"].append(
-                {
-                    "error": "Worker error",
-                    "message": "Graph with less nodes than expected",
-                    "detail": "Try restarting the system",
-                }
-            )
-        for node in self.nodes:
-            res[node.name] = node.status()
+        res = {
+            "type": type,
+            "errors": [],
+            "services": {},
+            "id": socket.gethostname(),
+            "status": "RUNNING",
+        }
 
-        if res["errors"] == []:
-            return json.dumps({"type": type, "status": "RUNNING"})
-        res["status"] = "ERROR"
-        return json.dumps(res)
+        if self.isRestarting.is_set():
+            res["status"] = "RESTARTING"
+        elif self.isStopping.is_set():
+            res["status"] = "STOPPING"
+        elif self.isStopped.is_set():
+            res["status"] = "STOPPED"
+        else:
+            expectedLen = len(self.graph) + 1
+            if expectedLen != len(self.nodes):
+                res["errors"].append(
+                    {
+                        "error": "Worker error",
+                        "message": "Graph with less nodes than expected",
+                        "detail": "Try restarting the system",
+                    }
+                )
+                res["status"] = "ERROR"
+            for node in self.nodes:
+                status = node.status()
+                res["services"][node.name] = status
+                if status["errors"] != []:
+                    res["status"] = "ERROR"
+
+        self.status_bus.send_string(json.dumps(res))
 
     def restart(self):
         if self.isRestarting.is_set():
@@ -154,35 +162,23 @@ class controller:
         self.stop()
         self.update_graph()
         self.isRestarting.clear()
+        self.status()
 
     def run(self):
         while True:
-            res = self.subscriber.recv_string().split(";", maxsplit=2)
+            command = self.subscriber.recv_string()
             try:
-                match res[0]:
+                match command:
                     case "START":
-                        res = self.update_graph()
+                        self.update_graph()
                     case "STOP":
                         threading.Thread(target=self.stop).start()
-                        res = "OK"
                     case "RESTART":
                         threading.Thread(target=self.restart).start()
-                        res = "OK"
                     case "STATUS":
-                        res = self.status()
+                        self.status()
                     case _:
-                        raise Exception("Command {} not supported".format(res[0]))
-                self.response.send_string(res)
+                        raise Exception("Command {} not supported".format(command))
             except Exception as e:
-                self.response.send_string(
-                    json.dumps(
-                        [
-                            {
-                                "error": "Worker error",
-                                "message": str(e),
-                                "detail": "Try restarting the system",
-                            }
-                        ]
-                    )
-                )
+                print(e)
                 continue
