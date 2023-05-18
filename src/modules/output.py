@@ -1,3 +1,4 @@
+from email import message
 import multiprocessing
 import zmq
 import os
@@ -39,9 +40,12 @@ class output(threading.Thread):
                 request = backend.recv_string()
                 print("{}: {}".format(backend.identity.decode("ascii"), request))
                 self.logger.info(request)
-                result = self.process_item(request.split(":", 1)[1])
+                message = request.split(":", 1)[1]
+                result = self.process_item(message)
                 if result is not None and type(result) == str:
-                    logging.debug(result)
+                    logging.debug(message + " -> " + result)
+                else:
+                    logging.debug(message + " -> " + "OK")
                 backend.send(b"OK")
         backend.close()
         context.term()

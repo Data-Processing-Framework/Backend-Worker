@@ -40,8 +40,9 @@ class transform(threading.Thread):
             if backend in sockets:
                 request = backend.recv_string()
                 print("{}: {}".format(backend.identity.decode("ascii"), request))
-                result = self.process_item(request.split(":", 1)[1])
-                self.logger.info(request + " -> " + result)
+                message = request.split(":", 1)[1]
+                result = self.process_item(message)
+                self.logger.info(message + " -> " + result)
                 publisher.send_string(self.name + ":" + result)
                 backend.send(b"OK")
         publisher.close()
