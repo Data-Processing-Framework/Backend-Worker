@@ -8,7 +8,7 @@ from src.broker import broker
 from src.internal_bus import internal_bus
 import threading
 from src.logger import logger
-import pymssql
+import mysql.connector
 import logging
 
 
@@ -38,11 +38,14 @@ class controller:
         db_user = os.getenv("LOGGING_DB_USER")
         db_password = os.getenv("LOGGING_DB_PASSWORD")
         db_dbname = os.getenv("LOGGING_DB_NAME")
-        db_tbl_log = "Input Worker" if self.isInput else "Worker"
-        log_conn = pymssql.connect(db_server, db_user, db_password, db_dbname, 30)
+        log_conn = mysql.connector.connect(
+            host=db_server, user=db_user, password=db_password, database=db_dbname
+        )
         log_cursor = log_conn.cursor()
-        logdb = logger(log_conn, log_cursor, db_tbl_log)
-        logging.getLogger("").addHandler(logdb)
+        logdb = logger(log_conn, log_cursor)
+        l = logging.getLogger("")
+        l.addHandler(logdb)
+        l.setLevel(logging.INFO)
 
     def create_node(self, node):
         module_path = "./src/data/modules/{}.py".format(node["module"])

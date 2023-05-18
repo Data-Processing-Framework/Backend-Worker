@@ -12,7 +12,7 @@ class input(threading.Thread):
         self.process_item = process_item
         self.publisher_addr = os.getenv("DATA_PUBLISHER_ADDRESS")
         self.polling_time = polling_time
-        self.logger = logging.getLogger(self.name)
+        self.logger = logging.getLogger(self.name + ";Input")
 
     def status(self):
         res = {"errors": []}

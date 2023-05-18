@@ -20,7 +20,7 @@ class output(threading.Thread):
         self.subscriber_addr = os.getenv("INTERNAL_SUBSCRIBER_ADDRESS")
         self.workers = queue.Queue()
         logging.basicConfig(filename=self.name + ".log", level=logging.DEBUG)
-        self.logger = logging.getLogger(self.name)
+        self.logger = logging.getLogger(self.name + ";Output")
 
     def worker(self, id, stopper):
         context = zmq.Context.instance()

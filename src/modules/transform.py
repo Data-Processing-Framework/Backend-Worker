@@ -20,7 +20,7 @@ class transform(threading.Thread):
         self.subscriber_addr = os.getenv("INTERNAL_SUBSCRIBER_ADDRESS")
         self.publisher_addr = os.getenv("INTERNAL_PUBLISHER_ADDRESS")
         self.workers = queue.Queue()
-        self.logger = logging.getLogger(self.name)
+        self.logger = logging.getLogger(self.name + ";Transform")
 
     def worker(self, id, stopper):
         context = zmq.Context.instance()
