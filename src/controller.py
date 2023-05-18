@@ -10,6 +10,7 @@ import threading
 from src.logger import logger
 import mysql.connector
 import logging
+import time
 
 
 class controller:
@@ -38,9 +39,21 @@ class controller:
         db_user = os.getenv("LOGGING_DB_USER")
         db_password = os.getenv("LOGGING_DB_PASSWORD")
         db_dbname = os.getenv("LOGGING_DB_NAME")
-        log_conn = mysql.connector.connect(
-            host=db_server, user=db_user, password=db_password, database=db_dbname
-        )
+        log_conn = ""
+        while not isinstance(
+            log_conn, mysql.connector.connection_cext.CMySQLConnection
+        ):
+            try:
+                log_conn = mysql.connector.connect(
+                    host=db_server,
+                    user=db_user,
+                    password=db_password,
+                    database=db_dbname,
+                )
+            except Exception:
+                print("Waiting for logging database")
+                time.sleep(1)
+                continue
         log_cursor = log_conn.cursor()
         logdb = logger(log_conn, log_cursor)
         l = logging.getLogger("")
