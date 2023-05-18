@@ -80,6 +80,7 @@ class controller:
                 case _:
                     return "Error"
         except Exception as e:
+            print(e)
             return "Error"
 
     def update_graph(self):
