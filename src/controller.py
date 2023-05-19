@@ -8,9 +8,7 @@ from src.modules.output import output
 from src.broker import broker
 from src.internal_bus import internal_bus
 import threading
-from src.logger import logger
 import mysql.connector
-import logging
 import time
 import socket
 
@@ -29,13 +27,13 @@ class controller:
         self.isStopped = threading.Event()
         self.isStopped.set()
         self.isStopping = threading.Event()
-        self.init_logger()
+        self.wait_for_logger()
 
         self.nodes = []
         self.n_nodes = 0
         self.update_graph()
 
-    def init_logger(self):
+    def wait_for_logger(self):
         db_server = os.getenv("LOGGING_DB_ADDRESS")
         db_user = os.getenv("LOGGING_DB_USER")
         db_password = os.getenv("LOGGING_DB_PASSWORD")
@@ -56,10 +54,6 @@ class controller:
                 time.sleep(1)
                 continue
         log_conn.close()
-        logdb = logger(db_server, db_user, db_password, db_dbname)
-        l = logging.getLogger("")
-        l.addHandler(logdb)
-        l.setLevel(logging.INFO)
 
     def create_node(self, node):
         try:

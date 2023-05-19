@@ -5,6 +5,8 @@ import threading
 from ctypes import c_bool
 import queue
 import logging
+import mysql.connector
+from src.logger import logger
 
 
 class transform(threading.Thread):
@@ -20,7 +22,6 @@ class transform(threading.Thread):
         self.subscriber_addr = os.getenv("INTERNAL_SUBSCRIBER_ADDRESS")
         self.publisher_addr = os.getenv("INTERNAL_PUBLISHER_ADDRESS")
         self.workers = queue.Queue()
-        self.logger = logging.getLogger(self.name + ";Transform")
 
     def worker(self, id, stopper):
         context = zmq.Context.instance()
@@ -35,6 +36,12 @@ class transform(threading.Thread):
         poller = zmq.Poller()
         poller.register(backend, zmq.POLLIN)
 
+        logdb = logger()
+        log = logging.getLogger(self.name + ":" + id + ";Transform")
+        log.handlers.clear()
+        log.addHandler(logdb)
+        log.setLevel(logging.INFO)
+
         while not stopper.value:
             sockets = dict(poller.poll(timeout=self.timeout))
             if backend in sockets:
@@ -43,9 +50,9 @@ class transform(threading.Thread):
                 message = request.split(":", 1)[1]
                 try:
                     result = self.process_item(message)
-                    self.logger.info(message + " -> " + result)
+                    log.info(message + " -> " + result)
                 except Exception as e:
-                    self.logger.error(str(e))
+                    log.error(str(e))
                     backend.send(b"OK")
                     continue
                 publisher.send_string(self.name + ":" + result)
@@ -53,6 +60,7 @@ class transform(threading.Thread):
         publisher.close()
         backend.close()
         context.term()
+        del logdb
 
     def status(self):
         res = {"errors": []}
