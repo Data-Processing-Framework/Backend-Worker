@@ -1,4 +1,3 @@
-from email import message
 import multiprocessing
 import zmq
 import os
@@ -6,6 +5,7 @@ import threading
 from ctypes import c_bool
 import queue
 import logging
+from src.logger import logger
 
 
 class output(threading.Thread):
@@ -20,8 +20,6 @@ class output(threading.Thread):
         self.timeout = int(os.getenv("WORKER_TIMEOUT"))
         self.subscriber_addr = os.getenv("INTERNAL_SUBSCRIBER_ADDRESS")
         self.workers = queue.Queue()
-        logging.basicConfig(filename=self.name + ".log", level=logging.DEBUG)
-        self.logger = logging.getLogger(self.name + ";Output")
 
     def worker(self, id, stopper):
         context = zmq.Context.instance()
@@ -34,6 +32,12 @@ class output(threading.Thread):
         poller = zmq.Poller()
         poller.register(backend, zmq.POLLIN)
 
+        logdb = logger()
+        log = logging.getLogger(self.name + ":" + str(id) + ";Output")
+        log.handlers.clear()
+        log.addHandler(logdb)
+        log.setLevel(logging.INFO)
+
         while not stopper.value:
             sockets = dict(poller.poll(timeout=self.timeout))
             if backend in sockets:
@@ -42,15 +46,16 @@ class output(threading.Thread):
                 message = request.split(":", 1)[1]
                 try:
                     self.process_item(message)
-                    self.logger.info(message + " -> OK")
+                    log.info(message + " -> OK")
 
                 except Exception as e:
-                    self.logger.error(str(e))
+                    log.error(str(e))
                     backend.send(b"OK")
                     continue
                 backend.send(b"OK")
         backend.close()
         context.term()
+        del logdb
 
     def status(self):
         res = {"errors": []}

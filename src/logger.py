@@ -1,12 +1,28 @@
 import logging
 import socket
+import mysql.connector
+import os
 
 
 class logger(logging.Handler):
-    def __init__(self, sql_conn, sql_cursor):
+    def __init__(self):
         logging.Handler.__init__(self)
-        self.sql_cursor = sql_cursor
-        self.sql_conn = sql_conn
+        db_server = os.getenv("LOGGING_DB_ADDRESS")
+        db_user = os.getenv("LOGGING_DB_USER")
+        db_password = os.getenv("LOGGING_DB_PASSWORD")
+        db_dbname = os.getenv("LOGGING_DB_NAME")
+
+        self.sql_conn = mysql.connector.connect(
+            host=db_server,
+            user=db_user,
+            password=db_password,
+            database=db_dbname,
+        )
+        self.sql_cursor = self.sql_conn.cursor()
+
+    def __del__(self):
+        self.sql_cursor.close()
+        self.sql_conn.close()
 
     def emit(self, record):
         self.log_msg = record.msg

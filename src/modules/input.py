@@ -3,6 +3,7 @@ import os
 import threading
 import time
 import logging
+from src.logger import logger
 
 
 class input(threading.Thread):
@@ -12,7 +13,6 @@ class input(threading.Thread):
         self.process_item = process_item
         self.publisher_addr = os.getenv("DATA_PUBLISHER_ADDRESS")
         self.polling_time = polling_time
-        self.logger = logging.getLogger(self.name + ";Input")
 
     def status(self):
         res = {"errors": []}
@@ -24,15 +24,21 @@ class input(threading.Thread):
         publisher.connect(self.publisher_addr)
         master = ""
 
+        logdb = logger()
+        log = logging.getLogger(self.name + ";Input")
+        log.handlers.clear()
+        log.addHandler(logdb)
+        log.setLevel(logging.INFO)
+
         time.sleep(5)
         while True:
             try:
                 try:
                     result = self.process_item()
                 except Exception as e:
-                    self.logger.error(str(e))
+                    log.error(str(e))
                     continue
-                self.logger.info(result + " -> OK")
+                log.info(result + " -> OK")
                 # if result != master:
                 master = result
                 publisher.send_string(self.name + ":" + result)
