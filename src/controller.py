@@ -67,7 +67,7 @@ class controller:
                     return input(node["name"], module.process_item, 1)
                 case "Transform":
                     return transform(
-                        node["name"], node["inputs"], module.process_item, 1
+                        node["name"], node["inputs"], module.process_item, 10
                     )
                 case "Output":
                     return output(node["name"], node["inputs"], module.process_item, 1)
