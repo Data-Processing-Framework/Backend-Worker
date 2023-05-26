@@ -33,7 +33,7 @@ class output(threading.Thread):
         poller.register(backend, zmq.POLLIN)
 
         logdb = logger()
-        log = logging.getLogger(self.name + ":" + str(id) + ";Output")
+        log = logging.getLogger(self.name + ";Output;" + str(id))
         log.handlers.clear()
         log.addHandler(logdb)
         log.setLevel(logging.INFO)

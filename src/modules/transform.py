@@ -37,7 +37,7 @@ class transform(threading.Thread):
         poller.register(backend, zmq.POLLIN)
 
         logdb = logger()
-        log = logging.getLogger(self.name + ":" + str(id) + ";Transform")
+        log = logging.getLogger(self.name + ";Transform;" + str(id))
         log.handlers.clear()
         log.addHandler(logdb)
         log.setLevel(logging.INFO)
