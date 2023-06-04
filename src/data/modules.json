@@ -1,9 +1,18 @@
 [
 	{
-		"name": "MYSQLInput",
+		"name": "Input",
 		"type": "Input",
-		"description": "asdasdas",
-		"type_in": ["str", "JSON"],
-		"type_out": ["str"]
+		"description": "Input module",
+		"type_in": "undefined",
+		"type_out": "[\"str\"]",
+		"code": "def process_item():\n    return \"dummy\"\n"
+	},
+	{
+		"name": "Transform",
+		"type": "Transform",
+		"description": "Transform module",
+		"type_in": "[\"str\"]",
+		"type_out": "[\"str\"]",
+		"code": "import time\n\n\ndef process_item(message: str):\n    time.sleep(1)\n    print(message)\n    return message\n"
 	}
 ]
